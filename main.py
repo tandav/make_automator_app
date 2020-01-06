@@ -21,9 +21,13 @@ BASH_SCRIPT = '/usr/local/bin/python3 /Users/tandav/Desktop/test.py "$@"'
 shutil.copytree(TEMPLATE, APP)
 
 
-def read_plist(path: str):
+def read_plist(path):
     with open(path, 'rb') as fd:
         return plistlib.load(fd)
+
+def write_plist(value, path):
+    with open(path, 'wb') as fd:
+        plistlib.dump(value, fd)
 
 workflow_path = 'Contents/document.wflow'
 info_path     = 'Contents/Info.plist'    
@@ -41,8 +45,5 @@ def rename_info(info):
 rename_info(info)
 workflow['actions'][0]['action']['ActionParameters']['COMMAND_STRING'] = BASH_SCRIPT
 
-with open(APP / info_path, 'wb') as fd:
-    plistlib.dump(info, fd)
-
-with open(APP / workflow_path, 'wb') as fd:
-    plistlib.dump(workflow, fd)
+write_plist(info    , APP / info_path)
+write_plist(workflow, APP / workflow_path)
