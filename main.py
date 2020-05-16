@@ -5,40 +5,75 @@ You can pass files and folders to app
 or drag-and-drop em on app
 or set this app as default for some types of files
 (filename will be passed as a parameter)
+
+support only for oneliners, multi-line shell script should be used kinda like this:
+<string>/usr/local/opt/python@3.8/bin/python3.8 -c 'import sys; print(sys.executable)' &gt; /Users/tandav/Desktop/log.txt</string>
+
 '''
 
 from pathlib import Path
-import plistlib
 import shutil
+import util
+import os
+import runpy
 
 
-APP_NAME    = 'MyApp'
-APP         = Path(APP_NAME).with_suffix('.app')
-TEMPLATE    = Path('Template.app')
-BASH_SCRIPT = '/usr/local/bin/python3 /Users/tandav/Desktop/test.py "$@"'
+# APPS_DIR          = Path(os.environ['DOTFILES_DIR']) / 'Services'
+APPS_DIR          = Path.home() / 'Desktop'
+# APP_TEMPLATE      = Path('Template.app')
+# WORKFLOW_TEMPLATE = Path('template.workflow')
 
-shutil.copytree(TEMPLATE, APP)
+TEMPLATE = Path('Template.app')
 
-def read_plist(path):
-    with open(path, 'rb') as fd:
-        return plistlib.load(fd)
-
-def write_plist(value, path):
-    with open(path, 'wb') as fd:
-        plistlib.dump(value, fd)
 
 workflow_path = 'Contents/document.wflow'
-info_path     = 'Contents/Info.plist'    
-workflow      = read_plist(TEMPLATE /  workflow_path)
-info          = read_plist(TEMPLATE / info_path)
+info_path     = 'Contents/Info.plist'   
 
-def rename_info(info):
-    prefix, dot, _ = info['CFBundleIdentifier'].rpartition('.')
-    info['CFBundleIdentifier'] = prefix + dot + APP_NAME
-    info['CFBundleName'] = APP_NAME
 
-rename_info(info)
-workflow['actions'][0]['action']['ActionParameters']['COMMAND_STRING'] = BASH_SCRIPT
+def _helper(name, shell_script, suffix):
+    APP = (APPS_DIR / name).with_suffix(suffix)
+    shutil.copytree(TEMPLATE, APP)
 
-write_plist(info    , APP / info_path)
-write_plist(workflow, APP / workflow_path)
+
+
+
+def make_app(name, shell_script):
+    APP = (APPS_DIR / name).with_suffix('.app')
+
+    shutil.copytree(TEMPLATE, APP)
+ 
+    workflow      = util.read_plist(TEMPLATE /  workflow_path)
+    info          = util.read_plist(TEMPLATE / info_path)
+
+    def rename_info(info):
+        prefix, dot, _ = info['CFBundleIdentifier'].rpartition('.')
+        info['CFBundleIdentifier'] = prefix + dot + name
+        info['CFBundleName'] = name
+
+    rename_info(info)
+    workflow['actions'][0]['action']['ActionParameters']['COMMAND_STRING'] = shell_script
+
+    util.write_plist(info    , APP / info_path)
+    util.write_plist(workflow, APP / workflow_path)
+
+# def make_workflow(name, shell_script):
+#     WF = (APPS_DIR / name).with_suffix('.workflow')
+    
+#     shutil.copytree(WORKFLOW_TEMPLATE, WF)
+
+#     workflow      = util.read_plist(TEMPLATE /  workflow_path)
+#     info          = util.read_plist(TEMPLATE / info_path)
+
+#     def rename_info(info):
+#         info['NSServices'][0]['NSMenuItem']['default'] = name
+
+#     rename_info(info)
+#     workflow['actions'][0]['action']['ActionParameters']['COMMAND_STRING'] = shell_script
+
+#     util.write_plist(info    , WF / info_path)
+#     util.write_plist(workflow, WF / workflow_path)
+
+
+make_app('template', '/usr/local/bin/python3 /Users/tandav/Desktop/test.py "$@"')
+# make('MyApp', '/usr/local/bin/python3 /Users/tandav/Desktop/test.py "$@"')
+# runpy.run_path(str(APPS_DIR / 'README.py'))
